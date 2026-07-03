@@ -6,6 +6,17 @@ MoA Synthesis is a Hermes Agent skill for high-stakes decision escalation. Norma
 
 This is not a generic "ask multiple AIs" wrapper. It is an escalation discipline for tool-using agents.
 
+## Relationship to Hermes native MoA
+
+Hermes Agent already includes a native Mixture-of-Agents (MoA) provider. Named MoA presets can be selected like regular models, and Hermes handles the reference-model fan-out, aggregator call, tool loop, and traceable execution.
+
+MoA Synthesis does not replace that engine. It is an operating discipline on top of it: a skill that decides when escalation is justified, prepares structured advisor briefs, invokes the configured MoA panel through delegation, reconciles disagreements, verifies the result, and keeps routine work on the default single-model path.
+
+In short:
+
+- Hermes native MoA is the execution mechanism.
+- MoA Synthesis is the escalation discipline.
+
 ![MoA Synthesis workflow](assets/moa-synthesis-flow.jpg)
 
 ## Why this exists
@@ -26,7 +37,7 @@ The goal is not to make the agent louder. The goal is to make the agent more car
 
 ## Core concept
 
-MoA Synthesis uses a Mixture-of-Agents style workflow:
+MoA Synthesis uses Hermes Agent's native MoA capability as the execution mechanism and adds the decision layer around it:
 
 1. **Incoming task** — the agent receives a task from the user or system.
 2. **Decision gate** — the agent checks whether the task deserves escalation. Normal tasks bypass the panel.

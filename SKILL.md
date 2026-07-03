@@ -22,16 +22,18 @@ metadata:
     tags: [moa, orchestration, delegation, escalation, panel-tuning, auto-config]
 ---
 
-# Mixture-of-Agents Synthesis v3 — escalation engine + self-tuning panel
+# Mixture-of-Agents Synthesis v3 — escalation discipline + self-tuning panel
 
-Decide on your own when a task deserves a panel of models instead of one, get
-that panel by calling `delegate_task`, verify what comes back, and — new in v3 —
-**re-tune the panel itself** to the strongest models actually available on this
-machine. Grounded in MoA research (layered proposers→aggregator), Self-MoA
-(reference QUALITY beats diversity), multi-agent debate (critique rounds
-improve factuality), and cascade routing (escalate on uncertainty, verify
-cheaply). Deep procedures live in `references/playbook.md` — read it when you
-escalate at L2/L3 or when tuning the panel.
+Hermes Agent already provides native MoA as a virtual model provider. This
+skill does not replace that engine; it operationalizes it. Decide when a task
+deserves a panel of models instead of one, get that panel by calling
+`delegate_task`, verify what comes back, and — new in v3 — **re-tune the panel
+itself** to the strongest models actually available on this machine. Grounded in
+MoA research (layered proposers→aggregator), Self-MoA (reference QUALITY beats
+diversity), multi-agent debate (critique rounds improve factuality), and
+cascade routing (escalate on uncertainty, verify cheaply). Deep procedures live
+in `references/playbook.md` — read it when you escalate at L2/L3 or when tuning
+the panel.
 
 ## 0. Build facts (verified against source v0.18.0, 2026-07-03)
 
