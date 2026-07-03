@@ -1,0 +1,6 @@
+.env
+*.bak
+*.log
+moa-traces/
+__pycache__/
+.DS_Store
