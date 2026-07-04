@@ -1,25 +1,33 @@
-# Audit Findings from v3 to v4
+# Public v3.0.0 to v4.1.0 Audit Notes
 
-## 1. Over-restrictive skill discovery
+These notes describe the gap between the previous public GitHub baseline, v3.0.0, and the operational v4.1.0 package.
 
-v3 declared `requires_toolsets: [delegation, skills]`. Hermes hides skills when required toolsets are unavailable, so this could make the skill disappear exactly when an operator needed to inspect its playbook. v4 removes `requires_toolsets` and keeps tool requirements inside the procedure.
+## 1. Docs-first baseline
 
-## 2. Fallback list replacement
+The public v3.0.0 repository was primarily conceptual: `README.md`, `SKILL.md`, `assets/`, `references/playbook.md`, `examples/sanitized-escalation-example.md`, `SECURITY.md`, and `LICENSE`.
 
-v3 generated a `fallback_providers` patch, and `apply_patch.py` deep-merged it by replacing lists. This could remove existing fallback entries. v4 merges `fallback_providers` by provider/model/base_url/key_env identity, preserving existing entries and appending managed ones.
+That was enough to explain the escalation doctrine, but not enough to operate model discovery, preset generation, config patching, smoke tests, or benchmark gates directly from the repository.
 
-## 3. Smoke test source limitation
+## 2. Manual provider/model handling
 
-v3 smoke-tested only `config.yaml`, which meant the normal preview workflow could not be validated before applying. v4 supports `--source auto|config|patch|merged`.
+v3.0.0 described how an operator should think about panel composition, but did not include a model inventory schema or a discovery script. v4.1.0 adds proof levels for model availability: `configured`, `endpoint`, `env-curated`, and `user-preferred`.
 
-## 4. Named custom provider ambiguity
+## 3. No executable preset workflow
 
-v3 represented custom providers too generically. v4 preserves named custom providers as `custom:<name>` for MoA use and emits `provider: custom` + `base_url` for fallback use, matching Hermes' documented distinction between named custom model selection and custom endpoint fallback.
+v3.0.0 treated tuning as an operator workflow. v4.1.0 adds `discover_models.py`, `tune_panel.py`, `apply_patch.py`, and `smoke_test.py`, turning the workflow into repeatable preview/apply/verify steps.
 
-## 5. YAML dependency clarity
+## 4. No benchmark gate
 
-v3 could silently treat YAML config as empty if PyYAML was not available. v4 raises a clear error when parsing real Hermes YAML requires PyYAML.
+v3.0.0 explained when MoA should be used, but the gate was not backed by an executable benchmark file. v4.1.0 adds `eval_gate.py` and `benchmarks/gate_cases.jsonl` so escalation decisions can be regression-tested.
 
-## 6. Regression tests
+## 5. Prompt templates were not first-class
 
-v4 adds `tests/test_regressions.py` to verify that unverified preferred models do not leak into safe patches, existing fallbacks survive apply, and empty configs do not generate fake production patches.
+v3.0.0 included a sanitized example. v4.1.0 adds reusable advisor and red-team templates so panel briefs can be generated consistently without copying from prose.
+
+## 6. Safety moved from policy to light enforcement
+
+v3.0.0 had useful security guidance. v4.1.0 adds validation, secret-pattern scanning, dry-run patching, backup-before-apply behavior, smoke tests, regression tests, and CI.
+
+## 7. Production readiness
+
+v3.0.0 was a strong blueprint. v4.1.0 is a stronger production baseline because it packages the doctrine with the scripts and tests needed to operate it on a real Hermes server. Operators should still run local validation and smoke tests before applying generated config changes.
