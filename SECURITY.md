@@ -1,26 +1,31 @@
-# Security policy
+# Security Policy
 
-MoA Synthesis is designed for high-stakes agent workflows, but it should not be given unnecessary secrets.
+MoA Synthesis multiplies model calls, so context minimization is mandatory.
 
-## Do not include
+Never include in advisor briefs:
 
-- API keys or bearer tokens;
+- API keys;
+- bearer tokens;
 - OAuth sessions;
 - private keys;
 - wallet seed phrases;
 - raw `.env` files;
 - production credentials;
 - private customer data;
-- full request dumps containing sensitive headers.
+- full HTTP request/response dumps with sensitive headers.
 
-## Recommended practice
+## Tool Execution
 
-- Give advisors sanitized context.
-- Keep tool execution centralized in the aggregator.
-- Verify model output before acting.
-- Preserve rollback paths for production-sensitive changes.
-- Store audit traces only when they do not contain secrets.
+Advisors should generally reason only. Tool execution should remain centralized in the aggregator or parent Hermes agent. Use `delegate_task(toolsets=...)` to restrict child tools.
 
-## Reporting
+## Config Changes
 
-If you find a security issue in this repository, open a GitHub issue with a minimal reproduction and no secrets.
+Generated config patches are preview-only by default. Applying changes requires explicit `--apply` and creates a backup.
+
+## Trace Hygiene
+
+Do not store raw prompts that contain secrets. Store only provider/model names, escalation level, verification result, and non-sensitive summaries.
+
+## Reporting Issues
+
+Do not paste secrets into issues or chat. Provide sanitized reproduction steps, expected behavior, actual behavior, Hermes version, and non-sensitive config snippets.

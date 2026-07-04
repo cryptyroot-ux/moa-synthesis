@@ -1,0 +1,27 @@
+moa:
+  default_preset: moa-synthesis-auto
+  presets:
+    moa-synthesis-auto:
+      reference_models:
+        - provider: openai-codex
+          model: gpt-5.5
+        - provider: openrouter
+          model: deepseek/deepseek-v4-pro
+      aggregator:
+        provider: openrouter
+        model: deepseek/deepseek-v4-pro
+      reference_max_tokens: 600
+      max_tokens: 4096
+      enabled: true
+fallback_providers:
+  - provider: openai-codex
+    model: gpt-5.5
+  - provider: openrouter
+    model: deepseek/deepseek-v4-pro
+provider_routing:
+  sort: latency
+  require_parameters: true
+  data_collection: deny
+moa_synthesis:
+  minimum_context_length: 64000
+  escalation_budget_ratio: 0.2

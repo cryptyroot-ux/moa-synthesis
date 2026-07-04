@@ -1,0 +1,26 @@
+model:
+  provider: openrouter
+  default: deepseek/deepseek-v4-pro
+  context_length: 64000
+fallback_providers:
+  - provider: openai-codex
+    model: gpt-5.5
+moa:
+  default_preset: review
+  presets:
+    review:
+      reference_models:
+        - provider: openai-codex
+          model: gpt-5.5
+      aggregator:
+        provider: openrouter
+        model: deepseek/deepseek-v4-pro
+      reference_max_tokens: 600
+      max_tokens: 4096
+      enabled: true
+custom_providers:
+  - name: ollama-local
+    base_url: http://localhost:11434/v1
+    models:
+      qwen3:4b:
+        context_length: 64000

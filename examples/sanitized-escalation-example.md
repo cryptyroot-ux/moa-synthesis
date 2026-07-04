@@ -1,40 +1,27 @@
-# Sanitized escalation example
+# Sanitized Escalation Example
 
-This example shows the shape of an MoA Synthesis escalation brief without exposing private code, credentials, or infrastructure details.
+## Task
 
-```text
-PROBLEM: Choose the safer deployment strategy for a new authentication middleware.
+Choose the best Hermes Agent inference stack for a server deployment using GPT-family and DeepSeek-family cloud models, with future migration to local Mini PC/Mac mini.
 
-HARD CONSTRAINTS:
-- The rollback path must be available within minutes.
-- Existing sessions must not be invalidated unexpectedly.
-- Secrets, tokens, and private environment files must not be shared with advisors.
+## Why Escalated
 
-SOFT PREFERENCES:
-- Prefer the simplest plan that satisfies all hard constraints.
-- Prefer observability before rollout.
+The decision affects architecture, cost, context length, local/cloud routing, reliability, privacy, and future migration path.
 
-PRIOR ATTEMPTS:
-- A direct production deploy was rejected because it had no staged rollback plan.
+## Sanitized Context
 
-DEFINITION OF DONE:
-- The plan names the rollout stages.
-- The plan names smoke tests.
-- The plan names rollback triggers.
-- The plan identifies the main risk.
+- Current runtime: VPS server.
+- Planned primary cloud models: GPT-family and DeepSeek V4 Pro-family.
+- Future local hardware planned.
+- Credentials omitted.
 
-MATERIALS:
-- Sanitized architecture summary.
-- Sanitized test list.
-- No credentials.
+## Hard Constraints
 
-MODE:
-- Answer directly from this brief. Do not use tools.
+- Do not expose local inference endpoints publicly.
+- Hermes agent workflows need large context.
+- Config changes require backup and rollback.
+- Do not assume a model exists unless it is configured or discovered.
 
-OUTPUT CONTRACT:
-1. ANSWER — recommended rollout strategy.
-2. KEY ASSUMPTIONS — what the answer depends on.
-3. WHAT WOULD CHANGE IT — observations that would flip the answer.
-4. CONFIDENCE + TOP RISK — one line.
-5. DISAGREEMENTS — advisor disagreement crux, if any.
-```
+## Output Format
+
+Return recommendation, alternatives, final config patch, verification checklist, and residual risk.

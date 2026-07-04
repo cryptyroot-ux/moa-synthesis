@@ -1,173 +1,184 @@
 ---
 name: moa-synthesis
-description: >
-  Use when a task is genuinely hard, ambiguous, high-stakes, or explicitly asks
-  for the best / most thorough / most optimal answer — architecture or design
-  decisions with more than one defensible approach, contested or underspecified
-  research questions, benchmark or graded tasks where quality is directly scored,
-  or whenever the default single-model answer hedges, contradicts itself, or
-  fails its own verification step. ALSO use when the owner asks to upgrade,
-  tune, re-configure, or "use the most powerful models in" the MoA panel /
-  delegation target — this skill can re-configure the panel itself from the
-  providers actually available on this machine. Do NOT use for mechanical,
-  deterministic, well-specified, or low-stakes tasks — formatting, boilerplate,
-  simple CRUD, running existing tests, quick lookups. Those stay on the default
-  single model for speed and token efficiency.
-version: 3.0.0
-author: Crypty Root
-license: MIT
-platforms: [linux, macos, windows]
+version: 4.1.0
+description: Risk-gated MoA escalation and model auto-tuning
+platforms: [linux, macos]
 metadata:
   hermes:
-    tags: [moa, orchestration, delegation, escalation, panel-tuning, auto-config]
+    category: orchestration
+    tags: [mixture-of-agents, model-routing, provider-routing, agent-safety, decision-governance]
 ---
 
-# Mixture-of-Agents Synthesis v3 — escalation discipline + self-tuning panel
+# MoA Synthesis
 
-Hermes Agent already provides native MoA as a virtual model provider. This
-skill does not replace that engine; it operationalizes it. Decide when a task
-deserves a panel of models instead of one, get that panel by calling
-`delegate_task`, verify what comes back, and — new in v3 — **re-tune the panel
-itself** to the strongest models actually available on this machine. Grounded in
-MoA research (layered proposers→aggregator), Self-MoA (reference QUALITY beats
-diversity), multi-agent debate (critique rounds improve factuality), and
-cascade routing (escalate on uncertainty, verify cheaply). Deep procedures live
-in `references/playbook.md` — read it when you escalate at L2/L3 or when tuning
-the panel.
+MoA Synthesis is a Hermes Agent skill for deciding when to stay single-model and when to escalate to Hermes native Mixture-of-Agents. It is not an MoA engine. Hermes native MoA is the execution mechanism; this skill is the decision, tuning, verification, and rollback discipline above it.
 
-## 0. Build facts (verified against source v0.18.0, 2026-07-03)
+## When to Use
 
-- `delegation.provider: moa` + `delegation.model: <preset>` → **every**
-  `delegate_task` call runs the configured panel. There is NO per-call
-  preset/model/toolset choice (schema: `goal`, `context`, `tasks[]`, `role`;
-  `background` is deprecated and ignored).
-- **Delegations run async automatically** — the result re-enters the
-  conversation as a new message. Fire the panel, keep working, reconcile when
-  it lands. Batch `tasks[]` fan out in parallel (max 3 concurrent).
-- **Preset CONTENTS are re-read from disk on every panel step**
-  (`moa_loop.py: create()` → `load_config()`). Editing `moa.presets.*` in
-  config.yaml takes effect on the very next call — no restart. Changing the
-  `delegation.*` pointer itself DOES need a gateway restart (cached in memory).
-- Cost model: with `fanout: per_iteration` (default) the reference advisors
-  re-run on **every tool iteration** of the child — panel cost ≈
-  (references × iterations) + aggregator loop, NOT a flat 3 calls. A
-  judgment-only brief ("answer from this brief; do not use tools") keeps it at
-  a true ~3 calls. `fanout: user_turn` runs advisors once per user turn.
-- References are advisors: no tools, stripped view (no system prompt, no tool
-  transcript, tool results previewed head+tail). The aggregator holds the
-  tools and produces the answer. A failed reference becomes a labelled note —
-  the panel continues.
-- Recursive MoA is blocked at config level; children are depth-capped
-  (`max_spawn_depth` default 1). **If you are a delegated child, answer
-  directly — never re-escalate.**
+Use this skill when any condition is true:
 
-## 1. Decide (10-second gate)
+- the user asks for the best, safest, most robust, production-ready, or graded answer;
+- the decision affects architecture, security, deployment, data migration, provider routing, cost, reliability, or irreversible state;
+- multiple defensible approaches exist and the wrong choice is expensive to reverse;
+- a single-model answer is uncertain, contradictory, under-evidenced, or fails verification;
+- the output will be shipped as-is;
+- the user asks for MoA, panel review, red-team review, model routing, provider auto-tuning, or high-confidence synthesis.
 
-Count escalation signals:
-1. Explicitly asks for best / most thorough / most optimal, or is benchmarked/graded.
-2. More than one defensible approach (architecture, design, UI/UX fork).
-3. Costly to reverse, security-relevant, or ships as-is.
-4. Contested / ambiguous / underspecified research question.
-5. Your single-model draft hedges, self-contradicts, or failed its own
-   verification (tests, lint, render mismatch).
-6. You would bet under ~70% that your solo answer survives expert review.
+Do not use it for formatting, translation, boilerplate, CRUD snippets, deterministic commands, trivial lookup, or low-risk work where latency/cost matters more than quality.
 
-**Escalate at ≥2 signals — or 1 signal if irreversible/graded.** Hard skips:
-mechanical/deterministic work; one clearly-right approach; latency beats the
-marginal gain; session already token-heavy and stakes don't justify it; you
-are a delegated child. Budget guard: if >15–20% of a session's turns escalate,
-the gate is mistuned. Escalate **once per decision** — on doubt, verify the
-draft instead of re-rolling the panel (cascade principle).
+## Procedure
 
-## 2. Escalate at the right level
+### 1. Apply the escalation gate
 
-| Level | Shape | Cost | Use when |
-|---|---|---|---|
-| **L1 panel-once** | one `delegate_task`, judgment-shaped brief, "no tools" directive | ~3 calls | default for a hard single question |
-| **L2 framed batch** | one call, `tasks=[2–3 framings of the same question]` (steelman A / steelman B / risk-audit); YOU aggregate the returns | ~3 calls × N panels | forked decisions with distinct lenses — adds a proposer layer with you as final aggregator (MoA layering) |
-| **L3 adversarial round** | second `delegate_task` feeding the L1/L2 draft: "red-team this — find errors, missing constraints, cheaper alternatives" | +~3 calls | output ships/graded as-is or is irreversible (debate research: critique rounds improve factuality) |
+Count signals:
 
-All levels are async — keep working while the panel runs. Framing menus and
-the red-team template: `references/playbook.md` §2–3.
+1. explicit request for best/production/graded answer;
+2. multiple defensible approaches;
+3. security, irreversible, or expensive rollback implications;
+4. ambiguous or contested requirements;
+5. single-model draft fails verification or contradicts itself;
+6. confidence below 0.70;
+7. provider/model selection materially affects correctness;
+8. external evidence is required and one path is insufficient.
 
-## 3. Brief like the panel is blind
+Decision:
 
-Subagents know nothing of this conversation. Every brief carries six fields —
-PROBLEM (one sentence) · CONSTRAINTS (hard, then soft) · PRIOR ATTEMPTS and why
-they failed · DEFINITION OF DONE (checkable) · MATERIALS (exact file paths,
-inline snippets, commands the child may run) · OUTPUT CONTRACT (answer, key
-assumptions, what would change it, confidence + top risk, reference
-disagreements). For pure judgment add: *"Answer directly from this brief; do
-not use tools."* For empirical tasks, name exactly what to run and accept the
-advisor×iterations cost. Full template: `references/playbook.md` §1.
+- mechanical or low-risk task: **L0 single-model**;
+- irreversible/graded task with at least one signal: **escalate**;
+- any task with at least two signals: **escalate**;
+- if more than 15-20% of turns escalate, tighten the gate.
 
-## 4. Verify and reconcile (draft ≠ gospel)
+### 2. Choose the escalation level
 
-- Verify empirically where possible — run it, test it, render it. Verification
-  is far cheaper than generation; never skip it to save tokens.
-- If the return reports reference disagreement: name the crux, test it if
-  testable, else present both positions plus your recommendation and why.
-- State in one line that you escalated: *"Escalated L2 (design fork,
-  irreversible) → panel converged on X; verified via Y."*
-- Best-effort telemetry: append one line per escalation to
-  `~/state/moa-escalations.log` (format: playbook §4). Skip silently if the
-  file toolset is unavailable.
+- **L0 — Single Model:** use Hermes' current default model; add cheap verification if needed.
+- **L1 — Panel-once:** use one MoA preset or one isolated `delegate_task` advisory panel for one hard question.
+- **L2 — Framed Batch:** run 2-3 frames such as steelman A, steelman B, risk/security audit, cost/latency audit, migration/rollback review, or model-routing review.
+- **L3 — Adversarial Red-Team:** produce a draft via L1/L2, then ask a red-team reviewer to find blocking issues.
 
-## 5. Panel auto-tuning (self-configuration)
+### 3. Respect the Hermes MoA contract
 
-Run this when the owner asks to upgrade/tune the panel or "use the most
-powerful models", when panel output is repeatedly weak, or when discovery
-shows clearly stronger models available than the current preset. Full
-commands: `references/playbook.md` §5.
+Hermes native MoA is a virtual model provider. The preset aggregator is the acting model. Reference models run first without tool schemas; their outputs are passed as private context to the aggregator. The aggregator emits the final assistant response and tool calls.
 
-1. **Discover** — read `config.yaml` (`providers:`, `moa:`, `delegation:`) and
-   list `.env` key NAMES only (never values, never print secrets).
-2. **Rank quality-first** (Self-MoA finding: reference quality beats
-   diversity — never seat a weak model for variety). Prefer flagship /
-   pro / max / reasoner tiers; diversity only among equals; the strongest
-   tool-capable model takes the aggregator seat (it acts); subscription/OAuth
-   models are free marginal capacity.
-3. **Probe** each new candidate:
-   `timeout 150 hermes -z "Reply with exactly: OK" --provider P --model M`.
-   Already-working slots don't need probing.
-4. **Edit** — back up config.yaml, then rewrite the **contents** of the preset
-   that `delegation.model` points at. Do NOT change `delegation.*` itself (that
-   needs a restart; preset contents go live on the next call). While editing:
-   set `reference_max_tokens: 700` (advisors need the gist, not essays — this
-   roughly halves panel latency), raise `max_tokens` to 8192 for the
-   aggregator, and pick `fanout` for the workload (`user_turn` for pure
-   judgment). Mirror the same slots into the `default` preset so the built-in
-   hardcoded fallback can never seat a model you didn't choose.
-5. **Verify** — run the disk-config simulation snippet (playbook §5.4), then
-   one live smoke test: `hermes -z "Reply with exactly: MOA_OK" --provider moa
-   --model <preset>`.
-6. **Report** the old→new panel diff to the owner. Offer `moa.save_traces:
-   true` for per-turn panel audit trails.
+MoA increases model-call count. One model iteration can involve multiple reference calls plus the aggregator call. Use it only when the gate justifies the extra cost.
 
-Safety rails: never print secret values; never edit provider auth blocks
-without owner approval (probe first, propose second); keep the `.bak` for
-rollback; a failed probe leaves that slot unchanged.
+### 4. Delegate safely when using subagents
 
-## 6. Gotchas (all code-verified)
+`delegate_task` supports restricted child toolsets at top level and per task. Use that capability deliberately. Advisors usually need no dangerous tools. Research advisors may receive `web`; implementation children may receive `terminal` and `file`; never grant broader toolsets than necessary.
 
-- The panel is a judgment engine, not parallel grunt labor — mechanical
-  fan-out goes through `execute_code`.
-- Self-containment is on you: references see stripped text only.
-- Partial reference failure is normal — don't re-trigger the panel over it.
-- The config normalizer silently replaces invalid preset slots with built-in
-  defaults. After ANY config edit, run the simulation check; if panel output
-  ever names a model you didn't configure, stop and flag the owner.
-- Results arrive asynchronously as a new message — don't block on them.
-- If you are the child: answer directly, never re-delegate.
+Subagents have no parent conversation memory. Every delegated brief must be self-contained and sanitized.
 
-## 7. Examples
+### 5. Auto-tune providers and models
 
-- "Design retry/backoff for 3 unreliable providers under a hard turn budget"
-  → L1 (add an L2 risk-audit framing if it ships as-is).
-- "Which of these two schemas holds up better at scale, and why?" → L2:
-  steelman each schema + one failure-mode audit framing.
-- "Rewrite the auth middleware; it deploys straight to prod" → L1 then L3
-  red-team on the draft.
-- "Rename this variable and fix the lint warning" → never escalate.
-- "Upgrade the panel; use the strongest available models" → §5 procedure.
-- "Summarize this changelog" → never escalate.
+When the user asks Hermes to adapt to available providers/models:
+
+```bash
+python3 scripts/validate_skill.py
+python3 scripts/discover_models.py --hermes-home ~/.hermes
+python3 scripts/tune_panel.py --hermes-home ~/.hermes --write-preview
+python3 scripts/apply_patch.py --hermes-home ~/.hermes
+python3 scripts/smoke_test.py --hermes-home ~/.hermes --source merged --preset moa-synthesis-auto
+```
+
+If expected models are not in config yet, add explicit preferences, for example:
+
+```bash
+python3 scripts/discover_models.py --hermes-home ~/.hermes \
+  --preferred openai-codex:gpt-5.5.5 \
+  --preferred openrouter:deepseek/deepseek-v4-pro
+```
+
+Unverified preferred names are visible in inventory but are not used for safe patch generation unless `--allow-unverified` is passed to `tune_panel.py`.
+
+Apply only with explicit operator approval:
+
+```bash
+python3 scripts/apply_patch.py --hermes-home ~/.hermes --apply
+python3 scripts/smoke_test.py --hermes-home ~/.hermes --source config --preset moa-synthesis-auto
+```
+
+Never silently overwrite `~/.hermes/config.yaml`.
+
+### 6. Select roles by quality, not quantity
+
+Aggregator / acting model:
+
+- best tool-use reliability;
+- strong instruction following and synthesis;
+- context length >= 64k;
+- stable provider availability;
+- low hallucination under tool pressure.
+
+Reference advisors:
+
+- strong reasoning and critique;
+- concise output using `reference_max_tokens`;
+- independent enough to expose hidden assumptions;
+- no tool schemas unless absolutely required.
+
+Fallbacks:
+
+- confirmed provider/model pairs first;
+- local Ollama only as privacy/offline fallback unless quality is sufficient;
+- avoid unverified preferred names as production aggregators.
+
+Quality-first rule: two strong advisors are better than four noisy advisors.
+
+### 7. Use a sanitized advisor brief
+
+Every advisor brief must include task, escalation reason, sanitized context, hard constraints, soft preferences, definition of done, forbidden actions, expected output shape, and verification expectations. Use `templates/advisor-brief.md` for the standard contract.
+
+### 8. Reconcile disagreements
+
+When advisors disagree:
+
+1. identify the crux;
+2. test the crux if possible;
+3. prefer evidence over vote count;
+4. preserve useful dissent;
+5. never average incompatible designs;
+6. do not ship if verification fails.
+
+### 9. Log only non-sensitive telemetry
+
+Log only non-sensitive summaries: timestamp, task family, escalation level, provider/model names, reason, verification status, failure mode, rollback path, and latency/cost estimate if available.
+
+Never log raw secrets, `.env`, bearer tokens, OAuth sessions, private customer data, or full request dumps.
+
+## Pitfalls
+
+- Do not use MoA as a reflex.
+- Do not equate consensus with correctness.
+- Do not expose credentials to advisors.
+- Do not let advisors execute side-effect tools unless required.
+- Do not use unverified model names as production aggregators.
+- Do not ignore Hermes version drift.
+- Do not overwrite provider routing unless the operator explicitly wants it.
+- Do not run local low-quality models as production aggregators just because they are free.
+
+## Verification
+
+Before final answer or config apply:
+
+- code: run tests, lint, type checks, or minimal repro;
+- config: validate YAML and dry-run merge;
+- security: secret scan, least-privilege review, no credential leakage;
+- deployment: backup, rollback, health check;
+- model routing: confirm provider availability, context length, tool-call compatibility, and fallback behavior;
+- research: cite primary sources and label inference.
+
+For this package itself, run:
+
+```bash
+python3 scripts/validate_skill.py
+python3 -m py_compile scripts/*.py tests/*.py
+python3 scripts/eval_gate.py
+python3 tests/test_regressions.py
+```
+
+## Reference Files
+
+- `references/playbook-v4.md` — operator runbook.
+- `references/provider-model-policy.md` — availability and model-proof rules.
+- `references/hermes-skill-compatibility.md` — Hermes skill-structure compatibility notes.
+- `templates/advisor-brief.md` — sanitized advisor prompt contract.
+- `templates/red-team-brief.md` — L3 adversarial review template.

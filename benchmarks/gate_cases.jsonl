@@ -1,0 +1,5 @@
+{"id":"format-readme","signals":0,"irreversible":false,"mechanical":true,"expected":"L0"}
+{"id":"prod-deploy-plan","signals":1,"irreversible":true,"mechanical":false,"expected":"escalate"}
+{"id":"choose-model-provider","signals":2,"irreversible":false,"mechanical":false,"expected":"escalate"}
+{"id":"simple-code-snippet","signals":1,"irreversible":false,"mechanical":false,"expected":"L0"}
+{"id":"security-rollback-review","signals":3,"irreversible":true,"mechanical":false,"expected":"escalate"}
